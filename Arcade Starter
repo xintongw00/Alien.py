@@ -1,0 +1,308 @@
+import arcade
+import random
+import math
+import os
+
+SPRITE_SCALING_PLAYER = 0.1
+SPRITE_SCALING_COIN = 0.5
+SPRITE_SCALING_WALL = 0.5
+SPRITE_SCALING_BULLET = 0.8
+SPRITE_SCALING_ENEMY = 0.8
+COIN_COUNT = 50
+SCREEN_WIDTH = 805
+SCREEN_HEIGHT = 700
+MOVEMENT_SPEED = 6
+BULLET_SPEED = 8
+
+#Need a class for walls, player, enemies, lasers, coins/upgrades
+class Walls(arcade.Sprite):
+    def __init__(self):
+        """Creates the wall Sprite"""
+        super().__init__("ArcadeImages/box.png", SPRITE_SCALING_WALL)
+
+class Coins(arcade.Sprite): #Will possibly change to an Upgrades class
+    def __init__(self):
+        """Creates the coin Sprite"""
+        super().__init__("ArcadeImages/coinGold.png", SPRITE_SCALING_COIN)
+
+class Enemies(arcade.Sprite):
+    def __init__(self):
+        """Creates the enemy Sprite"""
+        super().__init__("ArcadeImages/slimeWalk1.png", SPRITE_SCALING_ENEMIES)
+
+class Bullet(arcade.Sprite):
+    """Creates Bullet sprite"""
+    def __init__(self):
+        """creates the wall Sprite"""
+        super().__init__("ArcadeImages/arrow_01c.png", SPRITE_SCALING_BULLET)
+
+class Player(arcade.Sprite):
+    def __init__(self):
+        """Creates the player Sprite"""
+        super().__init__("ArcadeImages/pikachu.png", SPRITE_SCALING_PLAYER)
+        self.center_x = 50
+        self.center_y = 50
+
+    def update(self):
+        """Updates the player Sprite"""
+        self.center_x += self.change_x
+        self.center_y += self.change_y
+
+
+class MyGame(arcade.Window):
+    """Main application class."""
+    def __init__(self, width, height):
+        """Initializer"""
+        super().__init__(width, height, "Pikachu Rough 'em Up!")
+        #Makes Mouse disappear when on screen
+        self.set_mouse_visible(False)
+
+        #Variables that hold the sprite list
+        self.player_list = None
+        self.coin_list = None
+        self.wall_list = None
+        self.bullet_list = None
+
+        # Set up the player info
+        self.player_sprite = None
+        self.score = 0
+        self.physics_engine = None
+    
+        # Track the current state of what key is pressed
+        self.left_pressed = False
+        self.right_pressed = False
+        self.up_pressed = False
+        self.down_pressed = False
+
+        # Set up walls info
+        self.leftWall = None
+        self.topWall = None
+        self.rightWall = None
+        self.bottomWall = None
+
+        #Insert sounds here later?
+
+        # Set the background color
+        arcade.set_background_color(arcade.color.AMAZON)
+
+
+    def setup(self):
+        """ Set up the game and initialize the variables. """
+        self.score = 0
+        # Sprite lists
+        self.player_list = arcade.SpriteList()
+        self.coin_list = arcade.SpriteList()
+        self.wall_list = arcade.SpriteList()
+        self.bullet_list = arcade.SpriteList()
+
+        #Set up the player
+        self.player_sprite = Player()
+        self.player_list.append(self.player_sprite)
+
+        # Create the coins
+        for i in range(COIN_COUNT):
+            coin = Coins()
+            # Position the coin
+            coin.center_x = random.randrange(SCREEN_WIDTH)
+            coin.center_y = random.randrange(SCREEN_HEIGHT)
+            # Add the coin to the lists
+            self.coin_list.append(coin)
+
+        # Create a top row of boxes
+        for x in range(0, SCREEN_WIDTH, 35):
+            self.topWall = Walls()
+            self.topWall.center_x = x
+            self.topWall.center_y = SCREEN_HEIGHT-10
+            if x == 350 or x == 385 or x == 420 or x == 455:
+                self.topWall.kill()
+            else:
+                self.wall_list.append(self.topWall)
+
+        # Create a bottom row of boxes
+        for x in range(0, SCREEN_WIDTH, 35):
+            self.bottomWall = Walls()
+            self.bottomWall.center_x = x
+            self.bottomWall.center_y = 15
+            if x== 350 or x == 385 or x == 420 or x == 455:
+                self.bottomWall.kill()
+            else: 
+                self.wall_list.append(self.bottomWall)
+
+        # Create a right column of boxes
+        for y in range(0, SCREEN_HEIGHT+1, 35):
+            self.rightWall = Walls()
+            self.rightWall.center_x = SCREEN_WIDTH-10
+            self.rightWall.center_y = y
+            if y == 280 or y == 315 or y == 350 or y == 385:
+                self.rightWall.kill()
+            else:
+                self.wall_list.append(self.rightWall)
+
+        # Create a left column of boxes
+        for y in range(0, SCREEN_HEIGHT, 35):
+            self.leftWall = Walls()
+            self.leftWall.center_x = 15
+            self.leftWall.center_y = y
+            if y == 280 or y == 315 or y == 350 or y == 385:
+                self.leftWall.kill()
+            else:
+                self.wall_list.append(self.leftWall)
+
+        self.physics_engine = arcade.PhysicsEngineSimple(self.player_sprite, self.wall_list)
+        arcade.set_background_color(arcade.color.AMAZON)
+
+    def on_draw(self):
+        """Render the screen."""
+        arcade.start_render()
+
+        # Draw all the sprites.
+        self.player_list.draw()
+        self.coin_list.draw()
+        self.wall_list.draw()
+        self.bullet_list.draw()
+
+        # Put the text on the screen.
+        output = f"Score: {self.score}"
+        arcade.draw_text(output, 10, 20, arcade.color.WHITE, 14)
+
+    def on_key_press(self, key, modifiers):
+        """Called whenever a key is pressed. """
+        bullet = Bullet()
+        
+        #Movement of character
+        if key == arcade.key.UP:
+            self.up_pressed = True
+        elif key == arcade.key.DOWN:
+            self.down_pressed = True
+        elif key == arcade.key.LEFT:
+            self.left_pressed = True
+        elif key == arcade.key.RIGHT:
+            self.right_pressed = True
+        
+        #Shoot bullets
+        elif key == arcade.key.W:
+            # Position the bullet at the player's current location
+            start_x = self.player_sprite.center_x
+            start_y = self.player_sprite.center_y
+            bullet.center_x = start_x
+            bullet.center_y = start_y
+            #Shoot up
+            bullet.change_y = BULLET_SPEED
+        elif key == arcade.key.S:
+             # Position the bullet at the player's current location
+            start_x = self.player_sprite.center_x
+            start_y = self.player_sprite.center_y
+            bullet.center_x = start_x
+            bullet.center_y = start_y
+            #Shoot up
+            bullet.change_y = -BULLET_SPEED
+        elif key == arcade.key.A:
+            # Position the bullet at the player's current location
+            start_x = self.player_sprite.center_x
+            start_y = self.player_sprite.center_y
+            bullet.center_x = start_x
+            bullet.center_y = start_y
+            #Shoot up
+            bullet.change_x = -BULLET_SPEED
+        elif key == arcade.key.D:
+            # Position the bullet at the player's current location
+            start_x = self.player_sprite.center_x
+            start_y = self.player_sprite.center_y
+            bullet.center_x = start_x
+            bullet.center_y = start_y
+            #Shoot up
+            bullet.change_x = BULLET_SPEED
+
+        # Add the bullet to the appropriate lists
+        self.bullet_list.append(bullet)
+
+
+    def on_key_release(self, key, modifiers):
+        """Called when the user releases a key. """
+
+        if key == arcade.key.UP:
+            self.up_pressed = False
+        elif key == arcade.key.DOWN:
+            self.down_pressed = False
+        elif key == arcade.key.LEFT:
+            self.left_pressed = False
+        elif key == arcade.key.RIGHT:
+            self.right_pressed = False
+
+    def on_mouse_motion(self,x,y,dx,dy):
+        """Movement of character with mouse if needed
+        We originally planned on moving the character with the arrow keys but
+        we will make an on_mouse_motion as an option"""
+        #I believe that students whould learn to implement input from mouse motion
+        #and keyboard, even though their original idea for the game might not initially
+        #have consideredone or the other
+        #For our game, it is best played with arrow keys
+        self.player_sprite.center_x = x
+        self.player_sprite.center_y = y
+
+    def update(self, delta_time):
+        """Update game changes from user/in game"""
+        # Calculate speed
+        self.player_sprite.change_x = 0
+        self.player_sprite.change_y = 0
+
+        
+        if self.up_pressed and not self.down_pressed:
+            self.player_sprite.change_y = MOVEMENT_SPEED
+        elif self.down_pressed and not self.up_pressed:
+            self.player_sprite.change_y = -MOVEMENT_SPEED
+        if self.left_pressed and not self.right_pressed:
+            self.player_sprite.change_x = -MOVEMENT_SPEED
+        elif self.right_pressed and not self.left_pressed:
+            self.player_sprite.change_x = MOVEMENT_SPEED
+
+        self.player_list.update()
+        self.coin_list.update()
+        self.bullet_list.update()
+
+        # Loop through each bullet
+        for bullet in self.bullet_list:
+            # Check this bullet to see if it hit a coin
+            hit_list = arcade.check_for_collision_with_list(bullet, self.coin_list)
+            # If it did, get rid of the bullet
+            if len(hit_list) > 0:
+                bullet.kill()
+            # For every coin we hit, add to the score and remove the coin
+            for coin in hit_list:
+                coin.kill()
+                self.score += 1
+            # If the bullet flies off-screen, remove it.
+            if bullet.bottom > self.width or bullet.top < 0 or bullet.right < 0 or bullet.left > self.width:
+                bullet.kill()
+
+        # Generate a list of all sprites that collided with the player.
+        coins_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.coin_list)
+
+        # Loop through each colliding sprite, remove it, and add to the score.
+        for coin in coins_hit_list:
+            coin.kill()
+            self.score += 1
+        
+        self.physics_engine.update
+
+
+def main():
+    """ Main method """
+    window = MyGame(SCREEN_WIDTH, SCREEN_HEIGHT)
+    window.setup()
+    arcade.run()
+
+
+if __name__ == "__main__":
+    main()
+
+
+"""     if self.left < 0:
+            self.left = 0
+        elif self.right > SCREEN_WIDTH - 1:
+            self.right = SCREEN_WIDTH - 1
+
+        if self.bottom < 0:
+            self.bottom = 0
+        elif self.top > SCREEN_HEIGHT - 1:
+            self.top = SCREEN_HEIGHT - 1"""
