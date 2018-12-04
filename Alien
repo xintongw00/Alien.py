@@ -38,7 +38,7 @@ class Alien(arcade.Sprite):
         """updates the alien Sprite"""
         if random.randrange(150) == 10:
             self.center_x = random.randint(WALL_WIDTH, SCREEN_WIDTH - WALL_WIDTH)
-            self.center_x = random.randint(WALL_WIDTH, SCREEN_HEIGHT - WALL_WIDTH)
+            self.center_y = random.randint(WALL_WIDTH, SCREEN_HEIGHT - WALL_WIDTH)
 
         self.center_x += self.change_x
         self.center_y += self.change_y
@@ -50,14 +50,17 @@ class Player(arcade.Sprite):
         super().__init__("Images/pikachu.png", SPRITE_SCALING_PLAYER) #No chipBlue image was provided so I used my own image
         self.center_x = SCREEN_WIDTH // 2
         self.center_y = SCREEN_HEIGHT // 2
+        
 
 class Wall(arcade.Sprite):
-    def __init__(self, orientation):
-        """creates the wall Sprite"""
+    """def __init__(self, orientation):
+        creates the wall Sprite
         if orientation == "horizontal":
             super().__init__("Images/box.png", SPRITE_SCALING_WALL) #As with these, I used my own image, as I do not have these
         elif orientation == "vertical":
-            super().__init__("Images/boxAlt.png", SPRITE_SCALING_WALL)
+            super().__init__("Images/boxAlt.png", SPRITE_SCALING_WALL)"""
+    def __init__(self):    
+        super().__init__("Images/box.png", SPRITE_SCALING_WALL)
 
 class MyGame(arcade.Window):
     """Our custom Window class"""
@@ -85,7 +88,7 @@ class MyGame(arcade.Window):
         self.end_message = "To infinity and beyond!"
 
         # Set background
-        arcade.set_background_color((236, 94, 255))
+        arcade.set_background_color((0, 0, 0))
 
     def draw_instructions(self):
         """draws the instructions screen"""
@@ -136,7 +139,7 @@ class MyGame(arcade.Window):
             # Add the alien to the alien list
             self.alien_list.append(alien)
 
-        # Create the walls
+        """# Create the walls
         self.leftWall = Wall("vertical")
         self.leftWall.center_x = 0
         self.leftWall.center_y = SCREEN_HEIGHT // 2
@@ -155,7 +158,47 @@ class MyGame(arcade.Window):
         self.bottomWall = Wall("horizontal")
         self.bottomWall.center_x = SCREEN_WIDTH // 2
         self.bottomWall.center_y = 100
-        self.wall_list.append(self.bottomWall)
+        self.wall_list.append(self.bottomWall)"""
+
+        # Create a top row of boxes
+        for x in range(0, SCREEN_WIDTH, 35):
+            self.topWall = Wall()
+            self.topWall.center_x = x
+            self.topWall.center_y = SCREEN_HEIGHT-10
+            if x == 350 or x == 385 or x == 420 or x == 455:
+                self.topWall.kill()
+            else:
+                self.wall_list.append(self.topWall)
+            
+         # Create a bottom row of boxes
+        for x in range(0, SCREEN_WIDTH, 35):
+            self.bottomWall = Wall()
+            self.bottomWall.center_x = x
+            self.bottomWall.center_y = 15
+            if x== 350 or x == 385 or x == 420 or x == 455:
+                self.bottomWall.kill()
+            else: 
+                self.wall_list.append(self.bottomWall)
+
+        # Create a right column of boxes
+        for y in range(0, SCREEN_HEIGHT+1, 35):
+            self.rightWall = Wall()
+            self.rightWall.center_x = SCREEN_WIDTH-10
+            self.rightWall.center_y = y
+            if y == 280 or y == 315 or y == 350 or y == 385:
+                self.rightWall.kill()
+            else:
+                self.wall_list.append(self.rightWall)
+
+        # Create a left column of boxes
+        for y in range(0, SCREEN_HEIGHT, 35):
+            self.leftWall = Wall()
+            self.leftWall.center_x = 15
+            self.leftWall.center_y = y
+            if y == 280 or y == 315 or y == 350 or y == 385:
+                self.leftWall.kill()
+            else:
+                self.wall_list.append(self.leftWall)
 
     def on_draw(self):
         """Draw everything"""
@@ -185,10 +228,17 @@ class MyGame(arcade.Window):
 
         # Check for collisions with all walls
         if arcade.check_for_collision(self.player_sprite, self.leftWall):
-            self.player_sprite.change_x *= 0.9
+            self.player_sprite.change_x *= 0
         
         if arcade.check_for_collision(self.player_sprite, self.topWall):
-            self.player_sprite.change_y *= 0.9
+            self.player_sprite.change_y *= 0
+        
+        if arcade.check_for_collision(self.player_sprite, self.rightWall):
+            self.player_sprite.change_x *= 0
+        
+        if arcade.check_for_collision(self.player_sprite, self.bottomWall):
+            self.player_sprite.change_y *= 0
+
 
         # check if any of the aliens have collided with a wall
         for alien in self.alien_list:
@@ -198,6 +248,11 @@ class MyGame(arcade.Window):
             if arcade.check_for_collision(alien, self.topWall):
                 alien.change_y *= -1
 
+            if arcade.check_for_collision(alien, self.rightWall):
+                alien.change_x *= -1
+
+            if arcade.check_for_collision(alien, self.bottomWall):
+                alien.change_y *= -1
 
         alien_hit_list = arcade.check_for_collision_with_list(self.player_sprite, self.alien_list)
         if len(alien_hit_list) > 0:
