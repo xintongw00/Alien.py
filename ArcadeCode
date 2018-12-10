@@ -45,9 +45,18 @@ class Player(arcade.Sprite):
 
     def update(self):
         """Updates the player Sprite"""
-        self.center_x += self.change_x
-        self.center_y += self.change_y
-
+        if self.center_x < 50:                 #if the player is out of bounds, keep them in the boundary specified so that they don't run into the walls
+            self.center_x = 50
+        if self.center_x > 750:
+            self.center_x = 750
+        if self.center_y <50:
+            self.center_y = 50
+        if self.center_y > 650:
+            self.center_y = 650
+        else:       #(self.center_x >= 50 or self.center_x <= 750) and (self.center_y >= 50 or self.center_y <=650)
+            #if player is not out of bounds, update their position based on their keyboard and mouse movements
+            self.center_x += self.change_x
+            self.center_y += self.change_y
 
 class MyGame(arcade.Window):
     """Main application class."""
